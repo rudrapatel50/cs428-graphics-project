@@ -1,50 +1,78 @@
 import * as THREE from 'three';
 import Stats from 'stats.js';
+import { createRenderer, createCamera, createEnvironment } from './core/index.js';
 
-// FPS stats.js
-const stats = new Stats()
-stats.showPanel(0) // 0: fps, 1: ms, 2: mb, 3+: custom
-document.body.appendChild(stats.dom)
+// --- Stats ---
+const stats = new Stats();
+stats.showPanel(0);
+document.body.appendChild(stats.dom);
 
-// 1. Create a scene
+// --- Scene ---
 const scene = new THREE.Scene();
 
-// 2. Create a camera
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.z = 5;
-
-// 3. Create a renderer
-stats.begin() // stats.js - start measuring
-const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
-stats.end() // stats.js - end measuring
-
-// mount into #app
+// --- Renderer ---
 const container = document.getElementById('app') || document.body;
-container.appendChild(renderer.domElement);
+const renderer = createRenderer(container);
 
-// 4. Add a 3D object (a cube)
-const geometry = new THREE.BoxGeometry(1, 1, 1);
-const material = new THREE.MeshBasicMaterial({ color: 0x00000, wireframe: true });
-const cube = new THREE.Mesh(geometry, material);
-scene.add(cube);
+// --- Camera ---
+const { camera, controls, update: updateCamera } = createCamera(renderer.domElement);
 
-// animation loop
+// --- Environment (sky, fog, lights) ---
+const env = createEnvironment(scene);
+
+// --- Temporary ground plane ---
+const groundGeo = new THREE.PlaneGeometry(2000, 2000);
+const groundMat = new THREE.MeshStandardMaterial({ color: 0x3a7d44, roughness: 0.9 });
+const ground = new THREE.Mesh(groundGeo, groundMat);
+ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+// --- Placeholder objects to verify lighting & shadows ---
+const placeholders = [
+  { geo: new THREE.BoxGeometry(6, 6, 6), pos: [0, 3, -30] },
+  { geo: new THREE.SphereGeometry(4, 32, 32), pos: [20, 4, -50] },
+  { geo: new THREE.ConeGeometry(3, 8, 32), pos: [-15, 4, -40] },
+  { geo: new THREE.TorusKnotGeometry(3, 0.8, 128, 32), pos: [10, 6, -70] },
+];
+
+placeholders.forEach(({ geo, pos }) => {
+  const mat = new THREE.MeshStandardMaterial({
+    color: Math.random() * 0xffffff,
+    roughness: 0.6,
+    metalness: 0.2,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.set(...pos);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  scene.add(mesh);
+});
+
+// --- Clock ---
+const clock = new THREE.Clock();
+
+// --- Animate ---
 function animate() {
-    requestAnimationFrame(animate);
-    cube.rotation.x += 0.01;
-    cube.rotation.y += 0.01;
-    renderer.render(scene, camera);
-    stats.update(); // stats.js - update stats
+  requestAnimationFrame(animate);
+
+  stats.begin();
+
+  const delta = clock.getDelta();
+  updateCamera(delta);
+
+  renderer.render(scene, camera);
+
+  stats.end();
 }
 
-// handle resize
+// --- Resize ---
 window.addEventListener('resize', () => {
-    const w = window.innerWidth;
-    const h = window.innerHeight;
-    renderer.setSize(w, h);
-    camera.aspect = w / h;
-    camera.updateProjectionMatrix();
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
 });
 
 animate();
