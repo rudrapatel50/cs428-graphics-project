@@ -1,7 +1,11 @@
-/**
- * Shared utilities.
- *
- * Planned exports:
- *   noise(x, y, seed)   - seeded 2D noise function (Perlin / Simplex)
- *   seedRandom(seed)     - deterministic PRNG from a numeric seed
- */
+import seedrandom from "seedrandom";
+
+let rng = Math.random;
+
+export function seedRandom(seed) {
+  rng = seedrandom(seed);
+}
+
+export function random() {
+  return rng();
+}

@@ -1,3 +1,4 @@
+import { seedRandom } from "./utils/index.js";
 import * as THREE from 'three';
 import Stats from 'stats.js';
 import { createRenderer, createCamera, createEnvironment } from './core/index.js';
@@ -9,6 +10,7 @@ document.body.appendChild(stats.dom);
 
 // --- Scene ---
 const scene = new THREE.Scene();
+seedRandom("demo-seed");
 
 // --- Renderer ---
 const container = document.getElementById('app') || document.body;
