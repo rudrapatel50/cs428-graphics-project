@@ -1,8 +1,5 @@
 /**
- * UI module -- React overlay for user controls.
- *
- * Planned exports:
- *   initUI(root)  - mount the React UI into the given DOM element
+ * UI module -- Custom overlay for user controls.
  *
  * Planned controls:
  *   - Seed input
