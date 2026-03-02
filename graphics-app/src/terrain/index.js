@@ -1,37 +1,36 @@
 /**
- * terrain/index.js — Procedural terrain generation.
+ * terrain/index.js — Procedural terrain with infinite chunk streaming.
  *
- * Creates a heightmap mesh by displacing a subdivided plane with
- * layered simplex noise (fBm).  Vertices are coloured by altitude
- * so you get a natural water → grass → rock → snow gradient.
+ * Combines seeded noise heightmap generation with a chunk-based streaming
+ * system that loads/unloads terrain patches as the camera moves.
+ *
+ * Each chunk is a subdivided plane displaced by fBm noise and coloured
+ * by altitude (water → sand → grass → forest → rock → snow).
  *
  * Exports:
- *   createTerrain(scene, seed)  – build the terrain mesh and add it to the scene
- *   updateTerrain(camera)       – (stub) will stream/recycle chunks later
+ *   createTerrain(scene, seed)  – initialise the terrain system
+ *   updateTerrain(camera)       – stream chunks around the camera each frame
  */
 
-
-import * as THREE from 'three';
-import { createSeededNoise2D, fbm } from '../utils/index.js';
+import * as THREE from "three";
+import { createSeededNoise2D, fbm } from "../utils/index.js";
 
 // ─── Terrain configuration ──────────────────────────────────────────
-// Tweak these to change the look of the world.
 
-const TERRAIN_SIZE     = 2000;   // world-unit width & depth of the terrain patch
-const TERRAIN_SEGMENTS = 512;    // vertex subdivisions (512 × 512 = 262 k verts)
-const HEIGHT_SCALE     = 120;    // max peak height in world units
+const CHUNK_SIZE     = 200;    // world-unit width & depth of each chunk
+const CHUNK_SEGMENTS = 128;    // subdivisions per chunk (128×128 = 16k verts)
+const VIEW_RADIUS    = 3;      // how many chunks to keep loaded in each direction
+const HEIGHT_SCALE   = 120;    // max peak height in world units
 
 /** Noise parameters fed into fbm() */
 const NOISE_OPTS = {
-  octaves:    6,       // number of noise layers
-  lacunarity: 2.0,     // frequency multiplier per octave
-  gain:       0.45,    // amplitude decay per octave (persistence)
+  octaves:    6,
+  lacunarity: 2.0,
+  gain:       0.45,
   scale:      0.002,   // base frequency — lower = broader features
 };
 
 // ─── Altitude-based colour stops ────────────────────────────────────
-// Each entry: [normalised height 0-1, THREE.Color]
-// Heights below 0.28 are treated as "water level".
 
 const COLOUR_STOPS = [
   [0.00, new THREE.Color(0x1a3c5e)],  // deep water
@@ -44,14 +43,27 @@ const COLOUR_STOPS = [
   [1.00, new THREE.Color(0xffffff)],  // snow cap
 ];
 
+// ─── Module state ───────────────────────────────────────────────────
+
+let sceneRef  = null;   // reference to the THREE.Scene
+let noise2D   = null;   // seeded noise function
+const chunks  = new Map();  // key → THREE.Mesh
+let lastCX    = null;   // last camera chunk-X (skip work if unchanged)
+let lastCZ    = null;   // last camera chunk-Z
+
 // ─── Helpers ────────────────────────────────────────────────────────
 
+/** Map a world coordinate to a chunk index. */
+const worldToChunk = (v) => Math.floor(v / CHUNK_SIZE);
+
+/** Unique string key for a chunk coordinate pair. */
+const chunkKey = (cx, cz) => `${cx},${cz}`;
+
 /**
- * Linearly interpolate a colour from the COLOUR_STOPS table
- * based on a normalised height value t ∈ [0, 1].
+ * Interpolate a colour from the COLOUR_STOPS table
+ * based on a normalised height t ∈ [0, 1].
  */
 function sampleColour(t, target = new THREE.Color()) {
-  // Clamp to [0, 1]
   t = Math.max(0, Math.min(1, t));
 
   for (let i = 1; i < COLOUR_STOPS.length; i++) {
@@ -59,143 +71,90 @@ function sampleColour(t, target = new THREE.Color()) {
     const [currH, currCol] = COLOUR_STOPS[i];
 
     if (t <= currH) {
-      // How far between the two stops?
       const blend = (t - prevH) / (currH - prevH);
       return target.copy(prevCol).lerp(currCol, blend);
     }
   }
-
-  // Fallback — highest colour
   return target.copy(COLOUR_STOPS[COLOUR_STOPS.length - 1][1]);
 }
 
-// ─── Public API ─────────────────────────────────────────────────────
+// ─── Chunk lifecycle ────────────────────────────────────────────────
 
 /**
- * Build a procedural terrain mesh and add it to the scene.
- *
- * @param {THREE.Scene}  scene  The scene to add the terrain to.
- * @param {string|number} seed  Seed for deterministic generation.
- * @returns {{ mesh: THREE.Mesh }}  References for later use.
+ * Build a single terrain chunk at chunk-grid position (cx, cz),
+ * displace its vertices with noise, colour by altitude, and add to scene.
  */
-export function createTerrain(scene, seed) {
-  // 1. Create a seeded noise function
-  const noise2D = createSeededNoise2D(seed);
+function createChunk(cx, cz) {
+  // World-space origin of this chunk
+  const originX = cx * CHUNK_SIZE;
+  const originZ = cz * CHUNK_SIZE;
 
-  // 2. Build a subdivided plane, rotate it so Y is up
+  // Subdivided plane, rotated so Y is up
   const geometry = new THREE.PlaneGeometry(
-    TERRAIN_SIZE,
-    TERRAIN_SIZE,
-    TERRAIN_SEGMENTS,
-    TERRAIN_SEGMENTS
+    CHUNK_SIZE, CHUNK_SIZE,
+    CHUNK_SEGMENTS, CHUNK_SEGMENTS
   );
   geometry.rotateX(-Math.PI / 2);
 
-  // 3. Displace each vertex's Y by layered noise
   const positions = geometry.attributes.position;
+  const colours   = new Float32Array(positions.count * 3);
+  const tempCol   = new THREE.Color();
 
-  // We'll also store per-vertex colour based on height
-  const colours = new Float32Array(positions.count * 3);
-  const tempColour = new THREE.Color();
-
-  // Track min/max so we can normalise heights for colouring
-  let minY = Infinity;
+  let minY =  Infinity;
   let maxY = -Infinity;
 
-  // First pass — compute heights
+  // --- First pass: displace vertices with noise ---
   for (let i = 0; i < positions.count; i++) {
-    const x = positions.getX(i);
-    const z = positions.getZ(i);
+    // Local vertex position → world position for noise sampling
+    const wx = positions.getX(i) + originX + CHUNK_SIZE / 2;
+    const wz = positions.getZ(i) + originZ + CHUNK_SIZE / 2;
 
-    // Sample layered noise and scale to world height
-    const h = fbm(noise2D, x, z, NOISE_OPTS) * HEIGHT_SCALE;
+    const h = fbm(noise2D, wx, wz, NOISE_OPTS) * HEIGHT_SCALE;
     positions.setY(i, h);
 
     if (h < minY) minY = h;
     if (h > maxY) maxY = h;
   }
 
-  // Second pass — assign colours based on normalised height
-  const heightRange = maxY - minY || 1; // avoid division by zero
+  // --- Second pass: assign vertex colours by normalised height ---
+  const range = maxY - minY || 1;
 
   for (let i = 0; i < positions.count; i++) {
-    const y = positions.getY(i);
-    const t = (y - minY) / heightRange; // 0 at lowest, 1 at highest
-
-    sampleColour(t, tempColour);
-    colours[i * 3]     = tempColour.r;
-    colours[i * 3 + 1] = tempColour.g;
-    colours[i * 3 + 2] = tempColour.b;
+    const t = (positions.getY(i) - minY) / range;
+    sampleColour(t, tempCol);
+    colours[i * 3]     = tempCol.r;
+    colours[i * 3 + 1] = tempCol.g;
+    colours[i * 3 + 2] = tempCol.b;
   }
 
-  // Attach vertex colours to geometry
   geometry.setAttribute("color", new THREE.BufferAttribute(colours, 3));
-
-  // Recompute normals so lighting responds to the displaced surface
   geometry.computeVertexNormals();
 
-  // 4. Material — uses vertex colours, no texture needed
+  // Material — uses vertex colours, no texture needed
   const material = new THREE.MeshStandardMaterial({
     vertexColors: true,
     roughness: 0.85,
     metalness: 0.05,
-    flatShading: false, // smooth shading for natural look
+    flatShading: false,
   });
 
-  // 5. Create mesh, enable shadows, add to scene
   const mesh = new THREE.Mesh(geometry, material);
   mesh.receiveShadow = true;
-  mesh.castShadow = false; // terrain is huge — self-shadow not needed
-  scene.add(mesh);
 
-  return { mesh };
-}
-
-/**
- * Update terrain based on camera position.
- * (Stub — will handle chunk streaming / LOD in a future PR.)
- *
- * @param {THREE.Camera} _camera
- */
-export function updateTerrain(_camera) {
-  // TODO: implement chunk loading/unloading around camera
-}
-
-import * as THREE from "three";
-
-let sceneRef;
-const chunks = new Map();
-
-// settings
-const CHUNK_SIZE = 120;
-const VIEW_RADIUS = 2;
-
-const key = (x, z) => `${x},${z}`;
-const worldToChunk = (v) => Math.floor(v / CHUNK_SIZE);
-
-// ---------- CREATE CHUNK ----------
-function createChunk(cx, cz) {
-  const geo = new THREE.PlaneGeometry(CHUNK_SIZE, CHUNK_SIZE);
-  const mat = new THREE.MeshStandardMaterial({
-    color: 0x3a7d44,
-    roughness: 0.9
-  });
-
-  const mesh = new THREE.Mesh(geo, mat);
-  mesh.rotation.x = -Math.PI / 2;
-  mesh.receiveShadow = true;
-
+  // Position the chunk in the world
   mesh.position.set(
-    cx * CHUNK_SIZE + CHUNK_SIZE / 2,
+    originX + CHUNK_SIZE / 2,
     0,
-    cz * CHUNK_SIZE + CHUNK_SIZE / 2
+    originZ + CHUNK_SIZE / 2
   );
 
   sceneRef.add(mesh);
-  chunks.set(key(cx, cz), mesh);
+  chunks.set(chunkKey(cx, cz), mesh);
 }
 
-// REMOVE CHUNK 
+/**
+ * Remove a chunk and dispose its GPU resources.
+ */
 function removeChunk(k) {
   const mesh = chunks.get(k);
   if (!mesh) return;
@@ -206,41 +165,55 @@ function removeChunk(k) {
   chunks.delete(k);
 }
 
-// PUBLIC: CREATE INITIAL TERRAIN 
-export function createTerrain(scene) {
+// ─── Public API ─────────────────────────────────────────────────────
+
+/**
+ * Initialise the terrain system.  Call once after the scene is created.
+ *
+ * @param {THREE.Scene}   scene  The scene to add chunks to.
+ * @param {string|number} seed   Seed for deterministic generation.
+ */
+export function createTerrain(scene, seed) {
   sceneRef = scene;
+  noise2D  = createSeededNoise2D(seed);
 }
 
-// PUBLIC: UPDATE STREAMING 
-let lastCX = null;
-let lastCZ = null;
-
+/**
+ * Stream terrain chunks around the camera.  Call every frame.
+ * Loads new chunks that come into view, unloads ones that leave.
+ *
+ * @param {THREE.Camera} camera
+ */
 export function updateTerrain(camera) {
+  if (!sceneRef || !noise2D) return;
+
   const cx = worldToChunk(camera.position.x);
   const cz = worldToChunk(camera.position.z);
 
+  // Skip if the camera hasn't moved to a new chunk
   if (cx === lastCX && cz === lastCZ) return;
-
   lastCX = cx;
   lastCZ = cz;
 
+  // Determine which chunks should be loaded
   const needed = new Set();
 
   for (let dz = -VIEW_RADIUS; dz <= VIEW_RADIUS; dz++) {
     for (let dx = -VIEW_RADIUS; dx <= VIEW_RADIUS; dx++) {
       const nx = cx + dx;
       const nz = cz + dz;
-      const k = key(nx, nz);
+      const k  = chunkKey(nx, nz);
 
       needed.add(k);
 
+      // Create chunk if it doesn't exist yet
       if (!chunks.has(k)) {
         createChunk(nx, nz);
       }
     }
   }
 
-  // remove old chunks
+  // Remove chunks that are no longer in view
   for (const k of chunks.keys()) {
     if (!needed.has(k)) {
       removeChunk(k);

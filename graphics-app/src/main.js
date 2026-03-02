@@ -2,11 +2,9 @@ import { seedRandom } from './utils/index.js';
 import * as THREE from 'three';
 import Stats from 'stats.js';
 import { createRenderer, createCamera, createEnvironment } from './core/index.js';
-
 import { createTerrain, updateTerrain } from './terrain/index.js';
-
 import createUI from './ui/index.js';
-import { createTerrain, updateTerrain } from './terrain/index.js'; 
+
 // --- Stats ---
 const stats = new Stats();
 stats.showPanel(0);
@@ -26,10 +24,12 @@ const { camera, controls, update: updateCamera } = createCamera(renderer.domElem
 
 // --- Environment (sky, fog, lights) ---
 const env = createEnvironment(scene);
-createTerrrain(scene);
 
 // --- Procedural Terrain ---
 createTerrain(scene, SEED);
+
+// --- UI overlay ---
+createUI(env, scene);
 
 // --- Clock ---
 const clock = new THREE.Clock();
