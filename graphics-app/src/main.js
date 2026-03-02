@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import Stats from 'stats.js';
 import { createRenderer, createCamera, createEnvironment } from './core/index.js';
 import { createTerrain, updateTerrain } from './terrain/index.js';
+import createUI from './ui/index.js';
 
 // --- Stats ---
 const stats = new Stats();
@@ -26,6 +27,9 @@ const env = createEnvironment(scene);
 
 // --- Procedural Terrain ---
 createTerrain(scene, SEED);
+
+// --- UI overlay ---
+createUI(env, scene);
 
 // --- Clock ---
 const clock = new THREE.Clock();
