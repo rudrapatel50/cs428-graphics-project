@@ -28,8 +28,8 @@ graphics-app/
 │   ├── terrain/                Procedural terrain generation
 │   │   └── index.js            (stub -- terrain chunks, noise, LOD)
 │   │
-│   ├── ui/                     React UI overlay
-│   │   └── index.js            (stub -- seed input, sliders, debug panel)
+│   ├── ui/                     Custom UI overlay
+│   │   └── index.js            (seed input, sliders, debug panel)
 │   │
 │   └── utils/                  Shared helpers
 │       └── index.js            (stub -- noise functions, seeded PRNG)
