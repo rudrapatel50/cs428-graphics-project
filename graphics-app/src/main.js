@@ -2,6 +2,7 @@ import { seedRandom } from "./utils/index.js";
 import * as THREE from 'three';
 import Stats from 'stats.js';
 import { createRenderer, createCamera, createEnvironment } from './core/index.js';
+import createUI from './ui/index.js';
 
 // --- Stats ---
 const stats = new Stats();
@@ -29,6 +30,9 @@ const ground = new THREE.Mesh(groundGeo, groundMat);
 ground.rotation.x = -Math.PI / 2;
 ground.receiveShadow = true;
 scene.add(ground);
+
+// --- UI ---
+createUI(env, scene);
 
 // --- Placeholder objects to verify lighting & shadows ---
 const placeholders = [
