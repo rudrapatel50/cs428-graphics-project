@@ -1,7 +1,5 @@
 # Terrain Explorer
 
-[GitHub Pages Link](./graphics-app/index.html)
-
 An interactive, procedurally generated 3D world built with Three.js. Fly around a landscape that's created from a single seed — same seed, same world every time.
 
 ## Team
