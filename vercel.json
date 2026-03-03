@@ -1,3 +1,5 @@
 {
-  "rootDirectory": "graphics-app"
+  "buildCommand": "npm install --prefix graphics-app && npm run build --prefix graphics-app",
+  "outputDirectory": "graphics-app/dist",
+  "installCommand": "npm install --prefix graphics-app"
 }
