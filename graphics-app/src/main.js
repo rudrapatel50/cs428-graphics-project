@@ -20,6 +20,8 @@ import {
 } from './core/index.js';
 import { createTerrain, updateTerrain, setTerrainConfig } from './terrain/index.js';
 import createUI from './ui/index.js';
+import { createVFX, updateVFX, toggleRain } from './vfx/index.js'; 
+
 
 // ─── Stats (FPS counter) ────────────────────────────────────────────
 
@@ -54,6 +56,7 @@ const pp = createPostProcessing(renderer, scene, camera);
 // ─── Water ──────────────────────────────────────────────────────────
 
 const water = createWater(scene);
+createVFX(scene, camera);
 
 // ─── UI overlay (hidden until game starts) ──────────────────────────
 
@@ -260,6 +263,7 @@ window.addEventListener('ui:regenerateSeed', (e) => {
 window.addEventListener('ui:exitToMenu', () => {
   if (!gameStarted) return;
   gameStarted = false;
+  
 
   // Unlock controls
   if (controls.isLocked) {
@@ -273,6 +277,18 @@ window.addEventListener('ui:exitToMenu', () => {
 
   // Show hero page
   heroPage.style.display = '';
+});
+// Rain toggle
+window.addEventListener('keydown', (event) => {
+  if (event.key.toLowerCase() === 'r') {
+    const rainState = toggleRain();
+
+    console.log(
+      rainState
+        ? 'Rain enabled'
+        : 'Rain disabled'
+    );
+  }
 });
 
 // ─── Clock ──────────────────────────────────────────────────────────
@@ -291,6 +307,7 @@ function animate() {
   updateCamera(delta);
   updateTerrain(camera, maxChunksPerFrame);
   water.update(elapsed);
+  updateVFX();
 
   // Update coordinate HUD
   coordHud.textContent =
