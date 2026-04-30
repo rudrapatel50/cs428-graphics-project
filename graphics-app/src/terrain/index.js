@@ -11,20 +11,32 @@ import { createSeededNoise2D, fbm, ridgeFbm } from "../utils/index.js";
 // ─── Textures & Shader Splatting ───────────────────────────────────
 
 const textureLoader = new THREE.TextureLoader();
-const tRockDiff = textureLoader.load('/rocky_terrain/rocky_terrain_diffuse.jpg');
-const tRockNorm = textureLoader.load('/rocky_terrain/rocky_terrain_nor_gl.jpg');
-const tRockRoug = textureLoader.load('/rocky_terrain/rocky_terrain_rough.jpg');
+const tRockDiff = textureLoader.load(
+  "/rocky_terrain/rocky_terrain_diffuse.jpg",
+);
+const tRockNorm = textureLoader.load("/rocky_terrain/rocky_terrain_nor_gl.jpg");
+const tRockRoug = textureLoader.load("/rocky_terrain/rocky_terrain_rough.jpg");
 
-const tSandDiff = textureLoader.load('/sand/sand_diffuse.jpg');
-const tSandNorm = textureLoader.load('/sand/sand_nor_gl.jpg');
-const tSandRoug = textureLoader.load('/sand/sand_rough.jpg');
+const tSandDiff = textureLoader.load("/sand/sand_diffuse.jpg");
+const tSandNorm = textureLoader.load("/sand/sand_nor_gl.jpg");
+const tSandRoug = textureLoader.load("/sand/sand_rough.jpg");
 
-const tSnowDiff = textureLoader.load('/snow/snow_diff.jpg');
-const tSnowNorm = textureLoader.load('/snow/snow_nor_gl.jpg');
-const tSnowRoug = textureLoader.load('/snow/snow_rough.jpg');
+const tSnowDiff = textureLoader.load("/snow/snow_diff.jpg");
+const tSnowNorm = textureLoader.load("/snow/snow_nor_gl.jpg");
+const tSnowRoug = textureLoader.load("/snow/snow_rough.jpg");
 
-const allTex = [tRockDiff, tRockNorm, tRockRoug, tSandDiff, tSandNorm, tSandRoug, tSnowDiff, tSnowNorm, tSnowRoug];
-allTex.forEach(t => {
+const allTex = [
+  tRockDiff,
+  tRockNorm,
+  tRockRoug,
+  tSandDiff,
+  tSandNorm,
+  tSandRoug,
+  tSnowDiff,
+  tSnowNorm,
+  tSnowRoug,
+];
+allTex.forEach((t) => {
   t.wrapS = THREE.RepeatWrapping;
   t.wrapT = THREE.RepeatWrapping;
 });
@@ -45,7 +57,7 @@ sharedTerrainMaterial.userData = {
   tSandRoug: { value: tSandRoug },
   tSnowDiff: { value: tSnowDiff },
   tSnowNorm: { value: tSnowNorm },
-  tSnowRoug: { value: tSnowRoug }
+  tSnowRoug: { value: tSnowRoug },
 };
 
 const sharedWaterMaterial = new THREE.MeshPhysicalMaterial({
@@ -56,7 +68,7 @@ const sharedWaterMaterial = new THREE.MeshPhysicalMaterial({
   roughness: 0.1,
   ior: 1.4,
   thickness: 0.5,
-  side: THREE.DoubleSide
+  side: THREE.DoubleSide,
 });
 
 sharedTerrainMaterial.onBeforeCompile = (shader) => {
@@ -69,22 +81,22 @@ sharedTerrainMaterial.onBeforeCompile = (shader) => {
 
   // Add custom attribute vTexWeights
   shader.vertexShader = shader.vertexShader.replace(
-    '#include <common>',
+    "#include <common>",
     `
     attribute vec3 texWeights;
     varying vec3 vTexWeights;
     #include <common>
-    `
+    `,
   );
   shader.vertexShader = shader.vertexShader.replace(
-    '#include <color_vertex>',
+    "#include <color_vertex>",
     `#include <color_vertex>
      vTexWeights = texWeights;
-    `
+    `,
   );
 
   shader.fragmentShader = shader.fragmentShader.replace(
-    '#include <common>',
+    "#include <common>",
     `
     uniform sampler2D tSandDiff;
     uniform sampler2D tSandNorm;
@@ -94,12 +106,12 @@ sharedTerrainMaterial.onBeforeCompile = (shader) => {
     uniform sampler2D tSnowRoug;
     varying vec3 vTexWeights;
     #include <common>
-    `
+    `,
   );
 
   // Splat Diffuse Map
   shader.fragmentShader = shader.fragmentShader.replace(
-    '#include <map_fragment>',
+    "#include <map_fragment>",
     `
 #ifdef USE_MAP
     vec4 texelColor = texture2D(map, vMapUv); // Rock
@@ -109,12 +121,12 @@ sharedTerrainMaterial.onBeforeCompile = (shader) => {
     vec4 mixedTex = texelColor * vTexWeights.x + sandColor * vTexWeights.y + snowColor * vTexWeights.z;
     diffuseColor *= mixedTex;
 #endif
-    `
+    `,
   );
 
   // Splat Roughness Map
   shader.fragmentShader = shader.fragmentShader.replace(
-    '#include <roughnessmap_fragment>',
+    "#include <roughnessmap_fragment>",
     `
     float roughnessFactor = roughness;
     #ifdef USE_ROUGHNESSMAP
@@ -125,12 +137,12 @@ sharedTerrainMaterial.onBeforeCompile = (shader) => {
       float mixedRough = rockR * vTexWeights.x + sandR * vTexWeights.y + snowR * vTexWeights.z;
       roughnessFactor *= mixedRough;
     #endif
-    `
+    `,
   );
 
   // Splat Normal Map
   shader.fragmentShader = shader.fragmentShader.replace(
-    '#include <normal_fragment_maps>',
+    "#include <normal_fragment_maps>",
     `
 #ifdef USE_NORMALMAP_TANGENTSPACE
     vec3 rockN = texture2D(normalMap, vNormalMapUv).xyz * 2.0 - 1.0;
@@ -145,7 +157,7 @@ sharedTerrainMaterial.onBeforeCompile = (shader) => {
 #elif defined( USE_BUMPMAP )
     normal = perturbNormalArb( - vViewPosition, normal, dHdxy_fwd(), faceDirection );
 #endif
-    `
+    `,
   );
 };
 
@@ -156,7 +168,13 @@ let CHUNK_SEGMENTS = 128;
 let VIEW_RADIUS = 3;
 let SNOW_LEVEL = 80;
 
-export function setTerrainConfig({ viewRadius, chunkSegments, chunkSize, biomeScale, snowLevel } = {}) {
+export function setTerrainConfig({
+  viewRadius,
+  chunkSegments,
+  chunkSize,
+  biomeScale,
+  snowLevel,
+} = {}) {
   if (viewRadius != null) VIEW_RADIUS = viewRadius;
   if (chunkSegments != null) CHUNK_SEGMENTS = chunkSegments;
   if (chunkSize != null) CHUNK_SIZE = chunkSize;
@@ -175,9 +193,13 @@ const BIOMES = {
     noiseOpts: { octaves: 4, lacunarity: 2.0, gain: 0.35, scale: 0.003 },
     useRidged: false,
     colours: [
-      [0.00, 0x1a3c5e], [0.22, 0x2a6e9e], [0.28, 0xc2b280],
-      [0.35, 0x6db34f], [0.55, 0x4a8c38], [0.80, 0x3d7a2e],
-      [1.00, 0x6b8a50],
+      [0.0, 0x1a3c5e],
+      [0.22, 0x2a6e9e],
+      [0.28, 0xc2b280],
+      [0.35, 0x6db34f],
+      [0.55, 0x4a8c38],
+      [0.8, 0x3d7a2e],
+      [1.0, 0x6b8a50],
     ],
   },
   rollingHills: {
@@ -185,9 +207,14 @@ const BIOMES = {
     noiseOpts: { octaves: 5, lacunarity: 2.0, gain: 0.42, scale: 0.0025 },
     useRidged: false,
     colours: [
-      [0.00, 0x1a3c5e], [0.18, 0x2a6e9e], [0.24, 0xc2b280],
-      [0.30, 0x5ca040], [0.50, 0x3a7d44], [0.70, 0x5a6b4a],
-      [0.85, 0x7a7a6a], [1.00, 0x9a9a88],
+      [0.0, 0x1a3c5e],
+      [0.18, 0x2a6e9e],
+      [0.24, 0xc2b280],
+      [0.3, 0x5ca040],
+      [0.5, 0x3a7d44],
+      [0.7, 0x5a6b4a],
+      [0.85, 0x7a7a6a],
+      [1.0, 0x9a9a88],
     ],
   },
   forest: {
@@ -195,9 +222,14 @@ const BIOMES = {
     noiseOpts: { octaves: 5, lacunarity: 2.2, gain: 0.4, scale: 0.003 },
     useRidged: false,
     colours: [
-      [0.00, 0x1a3c5e], [0.20, 0x2a6e9e], [0.26, 0xb0a070],
-      [0.32, 0x2d7030], [0.50, 0x1a5a1e], [0.70, 0x14481a],
-      [0.85, 0x2d5a1e], [1.00, 0x506050],
+      [0.0, 0x1a3c5e],
+      [0.2, 0x2a6e9e],
+      [0.26, 0xb0a070],
+      [0.32, 0x2d7030],
+      [0.5, 0x1a5a1e],
+      [0.7, 0x14481a],
+      [0.85, 0x2d5a1e],
+      [1.0, 0x506050],
     ],
   },
   desert: {
@@ -205,9 +237,14 @@ const BIOMES = {
     noiseOpts: { octaves: 3, lacunarity: 2.0, gain: 0.3, scale: 0.002 },
     useRidged: false,
     colours: [
-      [0.00, 0x1a3c5e], [0.20, 0x2a6e9e], [0.26, 0xd4b896],
-      [0.35, 0xc8a86e], [0.55, 0xd4b078], [0.75, 0xbf9c5a],
-      [0.90, 0xc8a870], [1.00, 0xd8c8a0],
+      [0.0, 0x1a3c5e],
+      [0.2, 0x2a6e9e],
+      [0.26, 0xd4b896],
+      [0.35, 0xc8a86e],
+      [0.55, 0xd4b078],
+      [0.75, 0xbf9c5a],
+      [0.9, 0xc8a870],
+      [1.0, 0xd8c8a0],
     ],
   },
   mountains: {
@@ -215,10 +252,16 @@ const BIOMES = {
     noiseOpts: { octaves: 7, lacunarity: 2.0, gain: 0.48, scale: 0.002 },
     useRidged: true,
     colours: [
-      [0.00, 0x1a3c5e], [0.15, 0x2a6e9e], [0.20, 0xc2b280],
-      [0.26, 0x3a7d44], [0.38, 0x2d5a1e], [0.50, 0x6b6b5b],
-      [0.65, 0x7a7a6a], [0.80, 0x9e9e8e], [0.92, 0xc8c8c0],
-      [1.00, 0xffffff],
+      [0.0, 0x1a3c5e],
+      [0.15, 0x2a6e9e],
+      [0.2, 0xc2b280],
+      [0.26, 0x3a7d44],
+      [0.38, 0x2d5a1e],
+      [0.5, 0x6b6b5b],
+      [0.65, 0x7a7a6a],
+      [0.8, 0x9e9e8e],
+      [0.92, 0xc8c8c0],
+      [1.0, 0xffffff],
     ],
   },
   tundra: {
@@ -226,9 +269,13 @@ const BIOMES = {
     noiseOpts: { octaves: 4, lacunarity: 2.1, gain: 0.4, scale: 0.0025 },
     useRidged: false,
     colours: [
-      [0.00, 0x1a3c5e], [0.22, 0x2a6e9e], [0.28, 0xcccccc],
-      [0.35, 0xdddddd], [0.55, 0xeeeeee], [0.80, 0xf4f4f4],
-      [1.00, 0xffffff],
+      [0.0, 0x1a3c5e],
+      [0.22, 0x2a6e9e],
+      [0.28, 0xcccccc],
+      [0.35, 0xdddddd],
+      [0.55, 0xeeeeee],
+      [0.8, 0xf4f4f4],
+      [1.0, 0xffffff],
     ],
   },
 };
@@ -262,12 +309,12 @@ const BIOME_NOISE_2 = { octaves: 2, lacunarity: 2.0, gain: 0.5, scale: 0.0008 };
 // Biome centers placed at corners + center of the 2D noise space
 // so all biomes are reachable as noise sweeps [-0.6, 0.6]
 const BIOME_CENTERS = [
-  { name: 'plains', x: -0.40, y: -0.40 },
-  { name: 'desert', x: 0.40, y: -0.40 },
-  { name: 'forest', x: -0.40, y: 0.40 },
-  { name: 'mountains', x: 0.40, y: 0.40 },
-  { name: 'rollingHills', x: 0.00, y: 0.00 },
-  { name: 'tundra', x: 0.00, y: -0.55 },
+  { name: "plains", x: -0.4, y: -0.4 },
+  { name: "desert", x: 0.4, y: -0.4 },
+  { name: "forest", x: -0.4, y: 0.4 },
+  { name: "mountains", x: 0.4, y: 0.4 },
+  { name: "rollingHills", x: 0.0, y: 0.0 },
+  { name: "tundra", x: 0.0, y: -0.55 },
 ];
 
 function getBiomeWeights(wx, wz) {
@@ -321,7 +368,10 @@ async function createChunk(cx, cz) {
   const originZ = cz * CHUNK_SIZE;
 
   const geometry = new THREE.PlaneGeometry(
-    CHUNK_SIZE, CHUNK_SIZE, CHUNK_SEGMENTS, CHUNK_SEGMENTS
+    CHUNK_SIZE,
+    CHUNK_SIZE,
+    CHUNK_SEGMENTS,
+    CHUNK_SEGMENTS,
   );
   geometry.rotateX(-Math.PI / 2);
 
@@ -349,7 +399,7 @@ async function createChunk(cx, cz) {
       await new Promise((resolve) => setTimeout(resolve, 0));
     }
 
-    const lx = positions.getX(i) + CHUNK_SIZE / 2;  // local [0, CHUNK_SIZE]
+    const lx = positions.getX(i) + CHUNK_SIZE / 2; // local [0, CHUNK_SIZE]
     const lz = positions.getZ(i) + CHUNK_SIZE / 2;
     const wx = lx + originX;
     const wz = lz + originZ;
@@ -382,13 +432,16 @@ async function createChunk(cx, cz) {
     blendCol.setRGB(0, 0, 0);
 
     for (let b = 0; b < w00.length; b++) {
-      const weight = w00[b].weight * f00 + w10[b].weight * f10 +
-        w01[b].weight * f01 + w11[b].weight * f11;
-      if (weight < 0.001) continue;  // skip negligible biomes
+      const weight =
+        w00[b].weight * f00 +
+        w10[b].weight * f10 +
+        w01[b].weight * f01 +
+        w11[b].weight * f11;
+      if (weight < 0.001) continue; // skip negligible biomes
 
       const biome = w00[b].biome;
-      if (biome === 'desert') sandW += weight;
-      if (biome === 'tundra') baseSnowW += weight;
+      if (biome === "desert") sandW += weight;
+      if (biome === "tundra") baseSnowW += weight;
 
       const h = computeHeight(wx, wz, biome);
       height += h * weight;
@@ -449,7 +502,7 @@ function removeChunk(k) {
   const group = chunks.get(k);
   if (!group) return;
   sceneRef.remove(group);
-  group.children.forEach(c => {
+  group.children.forEach((c) => {
     if (c.geometry) c.geometry.dispose();
   });
   chunks.delete(k);
@@ -479,8 +532,8 @@ export function getTerrainHeight(x, z) {
 export function createTerrain(scene, seed) {
   sceneRef = scene;
   noise2D = createSeededNoise2D(seed);
-  biomeNoise1 = createSeededNoise2D(seed + '-biome1');
-  biomeNoise2 = createSeededNoise2D(seed + '-biome2');
+  biomeNoise1 = createSeededNoise2D(seed + "-biome1");
+  biomeNoise2 = createSeededNoise2D(seed + "-biome2");
   clearAllChunks();
 }
 
@@ -491,6 +544,26 @@ export function createTerrain(scene, seed) {
  */
 export function updateTerrain(camera, maxBuilds = 2) {
   if (!sceneRef || !noise2D) return;
+
+  // Setup frustum for culling
+  const frustum = new THREE.Frustum();
+  const projMatrix = new THREE.Matrix4();
+  projMatrix.multiplyMatrices(
+    camera.projectionMatrix,
+    camera.matrixWorldInverse,
+  );
+  frustum.setFromProjectionMatrix(projMatrix);
+
+  // Helper to test if chunk sphere is in frustum
+  const isChunkVisible = (chunkX, chunkZ) => {
+    const cx = chunkX * CHUNK_SIZE + CHUNK_SIZE / 2;
+    const cz = chunkZ * CHUNK_SIZE + CHUNK_SIZE / 2;
+    const sphere = new THREE.Sphere(
+      new THREE.Vector3(cx, 0, cz),
+      CHUNK_SIZE * 0.866,
+    );
+    return frustum.intersectsSphere(sphere);
+  };
 
   const cx = worldToChunk(camera.position.x);
   const cz = worldToChunk(camera.position.z);
@@ -503,11 +576,16 @@ export function updateTerrain(camera, maxBuilds = 2) {
     const needed = new Set();
     for (let dz = -VIEW_RADIUS; dz <= VIEW_RADIUS; dz++) {
       for (let dx = -VIEW_RADIUS; dx <= VIEW_RADIUS; dx++) {
-        const nx = cx + dx, nz = cz + dz;
+        const nx = cx + dx,
+          nz = cz + dz;
         const k = chunkKey(nx, nz);
-        needed.add(k);
-        if (!chunks.has(k)) {
-          buildQueue.push({ cx: nx, cz: nz, key: k });
+
+        // Only load chunks in frustum
+        if (isChunkVisible(nx, nz)) {
+          needed.add(k);
+          if (!chunks.has(k)) {
+            buildQueue.push({ cx: nx, cz: nz, key: k });
+          }
         }
       }
     }
@@ -518,6 +596,12 @@ export function updateTerrain(camera, maxBuilds = 2) {
     }
   }
 
+  // Cull existing chunks: hide those outside frustum
+  for (const [key, chunk] of chunks) {
+    const [nx, nz] = key.split(",").map(Number);
+    chunk.visible = isChunkVisible(nx, nz);
+  }
+
   // Process build queue (limited per tick to prevent stutter)
   let built = 0;
   while (buildQueue.length > 0 && built < maxBuilds) {
@@ -525,8 +609,11 @@ export function updateTerrain(camera, maxBuilds = 2) {
     if (chunks.has(item.key) || buildingChunks.has(item.key)) continue;
     // Skip if no longer in range
     if (lastCX !== null) {
-      if (Math.abs(item.cx - lastCX) > VIEW_RADIUS ||
-        Math.abs(item.cz - lastCZ) > VIEW_RADIUS) continue;
+      if (
+        Math.abs(item.cx - lastCX) > VIEW_RADIUS ||
+        Math.abs(item.cz - lastCZ) > VIEW_RADIUS
+      )
+        continue;
     }
     createChunk(item.cx, item.cz);
     built++;
