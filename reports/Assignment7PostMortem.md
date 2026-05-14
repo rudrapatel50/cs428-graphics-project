@@ -6,13 +6,22 @@
 ## Links
 - **Live Build:** https://cs428-graphics-project.vercel.app/
 - **Source Code:** https://github.com/cierraw01/cs428-graphics-project
-- **Demo Video:** [TODO: Insert YouTube/Vimeo link]
-
+- **Demo Video:** https://drive.google.com/file/d/1XoPZueK5C880-CbLdR1t3XbrLeKgITHg/view?usp=sharing
 ---
 
 ## Project Overview & Pillar Summary
 
 ## Playtest Resolution
+
+1. **Accessible Rain Controls** - Many players from our user study noted they were not aware of all the control features, especially the keyboard shortcuts, such as to trigger the rain or show the help overlay. Now, we added a rain toggle to the control panel, which is more apparent to the player.
+
+2. **Better cloud visuals** — We have substituted the previous sphere meshes clouds for sprite-based clouds.
+
+3. **Chunk pop-in** — One of the observations from our testers was that when flying fast, it looked like the terrain chunks pop up sharply, seemingly out of nowhere. Now, the player's view of new terrain is more gradual as new chunks have a fading transition.
+
+4. **Visual Clarity in night-mode** - A tester pointed out that it is hard to see the terrain environment when there is less sunlight like in night-mode as it all goes dark. Now, we have added more clarity and its easier for the player to differentiate different features in the terrain environment.
+
+5. **Help Overlay Functionality** - The help overlay is automatic displayed upon startup, and now has a 'x' button to close it.
 
 ## Technical Post-Mortem
 
@@ -40,5 +49,5 @@ No major cuts from our A2 MVP. The main pivot was expanding from single-biome to
 - [x] Final Build / Live URL: https://cs428-graphics-project.vercel.app/
 - [x] Source Code: https://github.com/cierraw01/cs428-graphics-project
 - [x] Polished README with build instructions
-- [ ] Demo Video: [TODO: Insert link]
+- [ ] Demo Video: https://drive.google.com/file/d/1XoPZueK5C880-CbLdR1t3XbrLeKgITHg/view?usp=sharing
 - [x] Engineering Retrospective (this document)

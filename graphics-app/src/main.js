@@ -76,6 +76,9 @@ window.__coordHud = coordHud;
 const onboarding = document.createElement('div');
 onboarding.id = 'onboarding-overlay';
 onboarding.innerHTML = `
+  <button id="onboarding-close-btn" class="onboarding-close-btn" aria-label="Close help">
+    ×
+  </button>
   <div>
     <h2>Controls</h2>
     <p>WASD: Move</p>
@@ -87,6 +90,11 @@ onboarding.innerHTML = `
 `;
 onboarding.style.display = 'none';
 document.body.appendChild(onboarding); 
+
+const onboardingCloseBtn = document.getElementById('onboarding-close-btn');
+onboardingCloseBtn.addEventListener('click', () => {
+  onboarding.style.display = 'none';
+});
 
 // ─── Loading screen helpers ─────────────────────────────────────────
 
@@ -258,12 +266,8 @@ async function startGame() {
   startAmbientAudio();
   onboarding.style.display = '';
 
-  // 7. Auto-lock pointer (takes user straight into the game)
-  try {
-    controls.lock();
-  } catch (e) {
-    // Some browsers require a user gesture — the click on Generate counts
-  }
+  // Pointer lock must be requested from a fresh user gesture.
+  // The overlay click handler in camera.js handles this — no auto-lock here.
 }
 
 // ─── Seed regeneration event (in-game) ──────────────────────────────

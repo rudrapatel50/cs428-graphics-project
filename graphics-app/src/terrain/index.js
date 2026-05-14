@@ -297,11 +297,6 @@ let lastCX = null;
 let lastCZ = null;
 const buildQueue = [];
 
-// ─── Chunk fade-in ──────────────────────────────────────────────────
-
-const FADE_DURATION = 600; // ms
-const fadingChunks = new Map(); // key -> { items, startTime }
-
 // ─── Helpers ────────────────────────────────────────────────────────
 
 const worldToChunk = (v) => Math.floor(v / CHUNK_SIZE);
@@ -487,47 +482,23 @@ async function createChunk(cx, cz) {
   const group = new THREE.Group();
   group.position.set(originX + CHUNK_SIZE / 2, 0, originZ + CHUNK_SIZE / 2);
 
-  // Clone materials for fade-in (swap back to shared after fade completes)
-  const fadeMat = sharedTerrainMaterial.clone();
-  fadeMat.transparent = true;
-  fadeMat.opacity = 0;
-  fadeMat.onBeforeCompile = sharedTerrainMaterial.onBeforeCompile;
-
-  const mesh = new THREE.Mesh(geometry, fadeMat);
+  const mesh = new THREE.Mesh(geometry, sharedTerrainMaterial);
   mesh.receiveShadow = true;
   group.add(mesh);
 
   // Add water plane
   const waterGeo = new THREE.PlaneGeometry(CHUNK_SIZE, CHUNK_SIZE);
   waterGeo.rotateX(-Math.PI / 2);
-  const fadeWaterMat = sharedWaterMaterial.clone();
-  fadeWaterMat.opacity = 0;
-  const waterMesh = new THREE.Mesh(waterGeo, fadeWaterMat);
+  const waterMesh = new THREE.Mesh(waterGeo, sharedWaterMaterial);
   waterMesh.position.y = 10; // Sea level
   group.add(waterMesh);
 
   sceneRef.add(group);
   chunks.set(key, group);
   buildingChunks.delete(key);
-
-  // Register for fade-in animation
-  fadingChunks.set(key, {
-    items: [
-      { mesh, clonedMat: fadeMat, sharedMat: sharedTerrainMaterial, targetOpacity: 1.0 },
-      { mesh: waterMesh, clonedMat: fadeWaterMat, sharedMat: sharedWaterMaterial, targetOpacity: 1.0 },
-    ],
-    startTime: performance.now(),
-  });
 }
 
 function removeChunk(k) {
-  // Clean up fade-in if still in progress
-  if (fadingChunks.has(k)) {
-    const fade = fadingChunks.get(k);
-    for (const entry of fade.items) entry.clonedMat.dispose();
-    fadingChunks.delete(k);
-  }
-
   const group = chunks.get(k);
   if (!group) return;
   sceneRef.remove(group);
@@ -646,25 +617,5 @@ export function updateTerrain(camera, maxBuilds = 2) {
     }
     createChunk(item.cx, item.cz);
     built++;
-  }
-
-  // ── Process chunk fade-ins ──
-  const now = performance.now();
-  for (const [fKey, fade] of fadingChunks) {
-    const progress = Math.min((now - fade.startTime) / FADE_DURATION, 1);
-    const eased = progress * (2 - progress); // ease-out quadratic
-
-    for (const entry of fade.items) {
-      entry.clonedMat.opacity = eased * entry.targetOpacity;
-    }
-
-    if (progress >= 1) {
-      // Swap back to shared materials to save memory
-      for (const entry of fade.items) {
-        entry.mesh.material = entry.sharedMat;
-        entry.clonedMat.dispose();
-      }
-      fadingChunks.delete(fKey);
-    }
   }
 }
