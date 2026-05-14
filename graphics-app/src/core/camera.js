@@ -22,9 +22,11 @@ export function createCamera(domElement) {
   const overlay = document.createElement('div');
   overlay.id = 'pointer-lock-overlay';
   overlay.textContent = 'Click to fly';
-  overlay.style.display = 'none';   // hidden initially; shown only after first Esc
+  overlay.style.display = 'none';
   domElement.parentElement.appendChild(overlay);
 
+  // Lock pointer on click — canvas is the primary target, overlay is fallback after ESC
+  domElement.addEventListener('click', () => controls.lock());
   overlay.addEventListener('click', () => controls.lock());
 
   controls.addEventListener('lock', () => {

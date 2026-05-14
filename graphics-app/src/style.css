@@ -837,6 +837,7 @@ input[type="range"]::-moz-range-thumb {
   top: 24px;
   left: 24px;
   z-index: 99999;
+  pointer-events: none;
 
   width: 300px;
 
@@ -888,6 +889,7 @@ input[type="range"]::-moz-range-thumb {
   color: #fff;
   font-size: 1.4rem;
   cursor: pointer;
+  pointer-events: auto;
 }
 .onboarding-close-btn:hover {
   background: rgba(255, 255, 255, 0.2);

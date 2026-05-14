@@ -266,12 +266,8 @@ async function startGame() {
   startAmbientAudio();
   onboarding.style.display = '';
 
-  // 7. Auto-lock pointer (takes user straight into the game)
-  try {
-    controls.lock();
-  } catch (e) {
-    // Some browsers require a user gesture — the click on Generate counts
-  }
+  // Pointer lock must be requested from a fresh user gesture.
+  // The overlay click handler in camera.js handles this — no auto-lock here.
 }
 
 // ─── Seed regeneration event (in-game) ──────────────────────────────
