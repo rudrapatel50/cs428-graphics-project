@@ -6,8 +6,7 @@
 ## Links
 - **Live Build:** https://cs428-graphics-project.vercel.app/
 - **Source Code:** https://github.com/cierraw01/cs428-graphics-project
-- **Demo Video:** [TODO: Insert YouTube/Vimeo link]
-
+- **Demo Video:** https://drive.google.com/file/d/1XoPZueK5C880-CbLdR1t3XbrLeKgITHg/view?usp=sharing
 ---
 
 ## Project Overview & Pillar Summary
@@ -50,5 +49,5 @@ No major cuts from our A2 MVP. The main pivot was expanding from single-biome to
 - [x] Final Build / Live URL: https://cs428-graphics-project.vercel.app/
 - [x] Source Code: https://github.com/cierraw01/cs428-graphics-project
 - [x] Polished README with build instructions
-- [ ] Demo Video: [TODO: Insert link]
+- [ ] Demo Video: https://drive.google.com/file/d/1XoPZueK5C880-CbLdR1t3XbrLeKgITHg/view?usp=sharing
 - [x] Engineering Retrospective (this document)
