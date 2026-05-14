@@ -871,3 +871,20 @@ input[type="range"]::-moz-range-thumb {
 
   color: rgba(255, 255, 255, 0.82);
 }
+
+.onboarding-close-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 1.4rem;
+  cursor: pointer;
+}
+.onboarding-close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}

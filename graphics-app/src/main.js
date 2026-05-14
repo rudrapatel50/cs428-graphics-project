@@ -76,6 +76,9 @@ window.__coordHud = coordHud;
 const onboarding = document.createElement('div');
 onboarding.id = 'onboarding-overlay';
 onboarding.innerHTML = `
+  <button id="onboarding-close-btn" class="onboarding-close-btn" aria-label="Close help">
+    ×
+  </button>
   <div>
     <h2>Controls</h2>
     <p>WASD: Move</p>
@@ -87,6 +90,11 @@ onboarding.innerHTML = `
 `;
 onboarding.style.display = 'none';
 document.body.appendChild(onboarding); 
+
+const onboardingCloseBtn = document.getElementById('onboarding-close-btn');
+onboardingCloseBtn.addEventListener('click', () => {
+  onboarding.style.display = 'none';
+});
 
 // ─── Loading screen helpers ─────────────────────────────────────────
 
