@@ -228,15 +228,26 @@ function updateClouds() {
   if (!clouds) return;
 
   clouds.children.forEach((cloud, index) => {
-    // Move cloud slowly
+    // Move clouds slowly across the sky
     cloud.position.x += 0.25 + index * 0.005;
 
-    // Recycle cloud when too far
+    // Distance fade effect
+    const distance = cloud.position.distanceTo(cameraRef.position);
+
+    cloud.material.opacity =
+      THREE.MathUtils.clamp(
+        1 - distance / 700,
+        0.05,
+        0.22
+      );
+
+    // Recycle clouds when too far
     if (cloud.position.x > cameraRef.position.x + 500) {
       cloud.position.x = cameraRef.position.x - 500;
     }
   });
 }
+
 
 
 // DUST MOVEMENT
