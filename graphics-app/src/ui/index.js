@@ -263,6 +263,34 @@ export default function createUI(env, scene, options = {}) {
     hudToggle.appendChild(hudCheck);
     body.appendChild(hudToggle);
   }
+  // ── Rain Toggle ───────────────────────────────────────
+{
+  const rainToggle = document.createElement('div');
+  rainToggle.className = 'cp-row cp-toggle-row';
+
+  const rainLabel = document.createElement('label');
+  rainLabel.className = 'cp-label';
+  rainLabel.textContent = 'Rain Effects';
+
+  const rainCheck = document.createElement('input');
+  rainCheck.type = 'checkbox';
+  rainCheck.id = 'toggle-rain';
+  rainCheck.checked = false;
+  rainCheck.className = 'cp-checkbox';
+
+  rainCheck.onchange = () => {
+    window.dispatchEvent(
+      new CustomEvent('ui:toggleRain', {
+        detail: { enabled: rainCheck.checked }
+      })
+    );
+  };
+
+  rainToggle.appendChild(rainLabel);
+  rainToggle.appendChild(rainCheck);
+
+  body.appendChild(rainToggle);
+}
 
   // ──────────────────────────────────────────────────────────────────
   // 6. Controls help

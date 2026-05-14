@@ -43,6 +43,10 @@ export function createVFX(scene, camera) {
 
   // Save initial player position
   lastCameraPosition.copy(camera.position);
+  // Listen for UI rain toggle
+window.addEventListener('ui:toggleRain', () => {
+  toggleRain();
+});
 }
 
 

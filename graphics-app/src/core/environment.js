@@ -27,7 +27,7 @@ const DEFAULT_FOG_DENSITY = 0.0004;
 // ─── Colour palettes for time-of-day interpolation ───────────────────
 
 /** Sky/fog colour at various sun elevations. */
-const FOG_NIGHT = new THREE.Color(0x070d1a);
+const FOG_NIGHT = new THREE.Color(0x0c1628);
 const FOG_SUNSET = new THREE.Color(0xc47040);
 const FOG_DAY = new THREE.Color(0x6ba3cc);
 
@@ -144,8 +144,8 @@ export function createEnvironment(scene) {
     // --- Dynamic light intensity ---
     const dayFactor = smoothstep(-5, 30, elevation);
     sunLight.intensity = THREE.MathUtils.lerp(0.05, 1.6, dayFactor);
-    hemiLight.intensity = THREE.MathUtils.lerp(0.08, 0.55, dayFactor);
-    ambientLight.intensity = THREE.MathUtils.lerp(0.25, 0.08, dayFactor);
+    hemiLight.intensity = THREE.MathUtils.lerp(0.15, 0.55, dayFactor);
+    ambientLight.intensity = THREE.MathUtils.lerp(0.4, 0.08, dayFactor);
 
     // --- Dynamic colours ---
     lerpTriple(LIGHT_NIGHT, LIGHT_SUNSET, LIGHT_DAY, elevation, sunLight.color);
